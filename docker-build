@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+docker rmi realtime-canvas-image | true
+docker build -t realtime-canvas-image .

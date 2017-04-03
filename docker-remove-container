@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+docker stop realtime-canvas-container | true
+docker rm realtime-canvas-container

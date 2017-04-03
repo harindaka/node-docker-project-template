@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+docker run -d --name realtime-canvas-container realtime-canvas-image
+docker update --restart=on-failure:3 realtime-canvas-container

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+DATE=`date +%Y-%m-%d`
+docker logs -t --since $DATE realtime-canvas-container

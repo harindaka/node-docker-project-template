@@ -1,7 +1,7 @@
 node-docker-project-template
 ============================
 
-A simple nodejs project template based on a docker alpine linux image. Includes a Dockerfile and helper scripts to manage the image and container. Image size will be around 50+ MB.
+A simple nodejs project template based on a docker alpine linux image. Includes a Dockerfile and helper scripts to build, run and manage the image / container. Resulting Docker image size is a mere 50+ MB.
 
 How to set it up
 ----------------

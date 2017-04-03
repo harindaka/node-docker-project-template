@@ -1,6 +1,14 @@
 #!/bin/bash
 
 set -e
-docker stop realtime-canvas-container | true
-docker rm realtime-canvas-container | true
-docker run -it --rm --name realtime-canvas-container realtime-canvas-image
+
+PROJECT_NAME=$(cat package.json \
+  | grep name \
+  | head -1 \
+  | awk -F: '{ print $2 }' \
+  | sed 's/[",]//g' \
+  | tr -d '[[:space:]]')
+  
+docker stop $PROJECT_NAME-container | true
+docker rm $PROJECT_NAME-container | true
+docker run -it --rm --name $PROJECT_NAME-container $PROJECT_NAME-image

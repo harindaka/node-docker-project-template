@@ -1,5 +1,12 @@
 #!/bin/bash
 
 set -e
-docker rmi realtime-canvas-image | true
-docker build -t realtime-canvas-image .
+PROJECT_NAME=$(cat package.json \
+  | grep name \
+  | head -1 \
+  | awk -F: '{ print $2 }' \
+  | sed 's/[",]//g' \
+  | tr -d '[[:space:]]')
+
+docker rmi $PROJECT_NAME-image | true
+docker build -t $PROJECT_NAME-image .

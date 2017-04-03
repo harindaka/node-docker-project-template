@@ -1,11 +1,13 @@
 (function(){
+    //Workaround to make the app inside the docker container (run using the -it options) exit when Ctrl+C is pressed.
+    process.on('SIGINT', function() {
+        process.exit();
+    });
 
     var express = require('express');
 
-    // Constants
     var PORT = 3000;
     
-    // App
     var app = express();
     app.get('/', function (req, res){
         res.send('Hello world');

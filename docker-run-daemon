@@ -9,4 +9,4 @@ PROJECT_NAME=$(cat package.json \
   | sed 's/[",]//g' \
   | tr -d '[[:space:]]')
   
-docker run -d --restart always --name $PROJECT_NAME-container $PROJECT_NAME-image
+docker run -d -p 3000:3000 --restart always --name $PROJECT_NAME-container $PROJECT_NAME-image

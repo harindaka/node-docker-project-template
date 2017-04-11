@@ -1,8 +1,8 @@
 #!/bin/bash
 
 set -e
+
 PROJECT_NAME_FILE="$HOME/.dh-project-name"
 read PROJECT_NAME <"$PROJECT_NAME_FILE"
 
-docker rmi $PROJECT_NAME-image | true
-docker build -t $PROJECT_NAME-image .
+docker exec -it $PROJECT_NAME-container sh

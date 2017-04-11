@@ -2,12 +2,8 @@
 
 set -e
 
-PROJECT_NAME=$(cat package.json \
-  | grep name \
-  | head -1 \
-  | awk -F: '{ print $2 }' \
-  | sed 's/[",]//g' \
-  | tr -d '[[:space:]]')
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
 
 docker inspect --format '{{ .NetworkSettings.IPAddress }}' $PROJECT_NAME-container
 docker inspect --format='{{range $p, $conf := .Config.ExposedPorts}} {{$p}} {{end}}' $PROJECT_NAME-container

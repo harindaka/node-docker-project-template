@@ -84,7 +84,7 @@ if [[ $@ == "" ]]; then
 fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-if [[ $@ != "path" ]] && [[ $@ != "name" ]]; then
+if [[ $@ != "path" ]] && [[ $@ != "name" ]] && [[ $@ != "reset" ]];then
   echo "Project path: $PROJECT_PATH"
   echo "Project name: $PROJECT_NAME"
 fi

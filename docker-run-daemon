@@ -2,11 +2,7 @@
 
 set -e
 
-PROJECT_NAME=$(cat package.json \
-  | grep name \
-  | head -1 \
-  | awk -F: '{ print $2 }' \
-  | sed 's/[",]//g' \
-  | tr -d '[[:space:]]')
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
   
 docker run -d -p 3000:3000 --restart always --name $PROJECT_NAME-container $PROJECT_NAME-image

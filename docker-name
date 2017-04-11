@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+echo $PROJECT_NAME

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+PROJECT_PATH_FILE="$HOME/.dh-project-path"
+read PROJECT_PATH <"$PROJECT_PATH_FILE"
+echo $PROJECT_PATH

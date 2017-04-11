@@ -4,5 +4,8 @@ set -e
 PROJECT_NAME_FILE="$HOME/.dh-project-name"
 read PROJECT_NAME <"$PROJECT_NAME_FILE"
 
+PROJECT_PATH_FILE="$HOME/.dh-project-path"
+read PROJECT_PATH <"$PROJECT_PATH_FILE"
+
 docker rmi $PROJECT_NAME-image | true
-docker build -t $PROJECT_NAME-image .
+docker build -t $PROJECT_NAME-image "$PROJECT_PATH"

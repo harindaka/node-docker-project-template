@@ -18,7 +18,9 @@ OPTIONS:
 
 COMMANDS:
 
-    path        echos the path set via the -p option.
+    path        echos the project path set via the -p option.
+    name        echos the project name set via the -n option.
+    reset       resets the project path and name to the current dir.
     build       builds a docker image.
     
 EOF
@@ -46,7 +48,7 @@ OPTIND=1
 # Resetting OPTIND is necessary if getopts was used previously in the script.
 # It is a good idea to make OPTIND local if you process options in a function.
 
-while getopts hpn: opt; do
+while getopts p:n:h opt; do
     case $opt in
         h)  show_help
             exit 0
@@ -54,15 +56,13 @@ while getopts hpn: opt; do
         p)  echo "${OPTARG}" >| "$PROJECT_PATH_FILE"
             read PROJECT_PATH <"$PROJECT_PATH_FILE"
             echo "Project path set to $PROJECT_PATH"
-
             BASENAME=`basename $PROJECT_PATH`
             echo "${BASENAME}" >| "$PROJECT_NAME_FILE" 
             read PROJECT_NAME <"$PROJECT_NAME_FILE"           
             echo "Project name set to $PROJECT_NAME"
             exit 0
             ;;
-        n)  BASENAME=`basename $PROJECT_PATH`
-            echo "${BASENAME}" >| "$PROJECT_NAME_FILE" 
+        n)  echo "${OPTARG}" >| "$PROJECT_NAME_FILE" 
             read PROJECT_NAME <"$PROJECT_NAME_FILE"           
             echo "Project name set to $PROJECT_NAME"
             exit 0
@@ -79,8 +79,8 @@ shift "$((OPTIND-1))" # Shift off the options and optional --.
 # printf '<%s>\n' "$@"
 
 if [[ $@ == "" ]]; then
-  echo "No command specified."
-  exit 0
+  show_help >&2
+  exit 1
 fi
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

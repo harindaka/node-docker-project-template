@@ -26,12 +26,11 @@ COMMANDS:
 EOF
 }
 
-# Initialize our own variables:
 PROJECT_PATH_FILE="$HOME/.dh-project-path"
 if [ -f "$PROJECT_PATH_FILE" ]; then
   read PROJECT_PATH <"$PROJECT_PATH_FILE"
 else
-  echo "${PWD}" >| "$PROJECT_PATH_FILE"
+  echo "${PWD}/src" >| "$PROJECT_PATH_FILE"
   read PROJECT_PATH <"$PROJECT_PATH_FILE"
 fi
 
@@ -89,5 +88,5 @@ if [[ $@ != "path" ]] && [[ $@ != "name" ]] && [[ $@ != "reset" ]];then
   echo "Project name: $PROJECT_NAME"
 fi
 
-source "$SCRIPT_DIR/docker-$@"
+source "$SCRIPT_DIR/docker-helpers/docker-$@"
 

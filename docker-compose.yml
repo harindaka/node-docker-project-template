@@ -5,13 +5,17 @@ nginx:
         - node2:node2
         - node3:node3
     ports:
-        - "8080:3000"
+        - "3001:3001"
 
-node-docker-project-template: 
-  build: . 
-  ports: 
-    - "3000:3000" 
-  # volumes: 
-  #   - .:/code 
-  # links: 
-  #   - other-project
+node1:
+    build: .
+    ports:
+        - "3000"
+node2:
+    build: .
+    ports:
+        - "3000"
+node3:
+    build: .
+    ports:
+        - "3000"

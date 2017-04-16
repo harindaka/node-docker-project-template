@@ -37,9 +37,8 @@ fi
 PROJECT_NAME_FILE="$HOME/.dh-project-name"
 if [ -f "$PROJECT_NAME_FILE" ]; then
   read PROJECT_NAME <"$PROJECT_NAME_FILE"
-else
-  BASENAME=`basename $PROJECT_PATH`
-  echo "${BASENAME}" >| "$PROJECT_NAME_FILE"
+else  
+  echo "node-app" >| "$PROJECT_NAME_FILE"
   read PROJECT_NAME <"$PROJECT_NAME_FILE"
 fi
 

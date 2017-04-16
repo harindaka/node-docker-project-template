@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+
+docker-machine create --driver virtualbox $PROJECT_NAME-swarm-manager
+
+SWARM_MANAGER_IP=$(docker-machine ip $PROJECT_NAME-swarm-manager)
+docker-machine ssh $PROJECT_NAME-swarm-manager "docker swarm init --advertise-addr $SWARM_MANAGER_IP"
+
+echo "Deploying portainer as a service in the swarm..."
+docker-machine ssh $PROJECT_NAME-swarm-manager "docker service create --name portainer --publish 9000:9000 --constraint 'node.role == manager' --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
+
+echo ""
+echo "Created swarm with manager at $SWARM_MANAGER_IP"
+echo ""
+echo "The following ports must be available"
+echo "-- TCP port 2377 for cluster management communications"
+echo "-- TCP and UDP port 7946 for communication among nodes"
+echo "-- UDP port 4789 for overlay network traffic"
+echo "If you are planning on creating an overlay network with encryption (--opt encrypted), you will also need to ensure ip protocol 50 (ESP) traffic is allowed"
+echo ""
+echo "Portainer service deployed at http://$SWARM_MANAGER_IP:9000"
+echo ""

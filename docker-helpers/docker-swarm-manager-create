@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+
+docker-machine create --driver virtualbox $PROJECT_NAME-swarm-manager

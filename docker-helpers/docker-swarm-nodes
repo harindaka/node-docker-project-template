@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+
+docker-machine ssh $PROJECT_NAME-swarm-manager "docker node ls"

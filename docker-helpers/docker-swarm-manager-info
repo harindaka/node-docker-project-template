@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+
+docker-machine ssh $PROJECT_NAME-swarm-manager "docker info"
+
+echo ""
+SWARM_MANAGER_IP=$(docker-machine ip $PROJECT_NAME-swarm-manager)
+echo "Portainer service deployed at http://$SWARM_MANAGER_IP:9000"
+echo ""

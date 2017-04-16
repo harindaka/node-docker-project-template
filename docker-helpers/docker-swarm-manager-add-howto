@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+
+docker-machine ssh $PROJECT_NAME-swarm-manager "docker swarm join-token manager"
+
+echo ""
+echo "Note that the above command needs to be executed in the other manager machine"
+echo ""

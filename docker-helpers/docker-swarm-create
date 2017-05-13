@@ -5,13 +5,27 @@ set -e
 PROJECT_NAME_FILE="$HOME/.dh-project-name"
 read PROJECT_NAME <"$PROJECT_NAME_FILE"
 
-docker-machine create --driver virtualbox $PROJECT_NAME-swarm-manager
+#docker-machine create --driver virtualbox $PROJECT_NAME-swarm-manager
 
-SWARM_MANAGER_IP=$(docker-machine ip $PROJECT_NAME-swarm-manager)
-docker-machine ssh $PROJECT_NAME-swarm-manager "docker swarm init --advertise-addr $SWARM_MANAGER_IP"
+#SWARM_MANAGER_IP=$(docker-machine ip $PROJECT_NAME-swarm-manager)
+#docker-machine ssh $PROJECT_NAME-swarm-manager "docker swarm init --advertise-addr $SWARM_MANAGER_IP"
+getMyIP() {
+    local _ip _myip _line _nl=$'\n'
+    while IFS=$': \t' read -a _line ;do
+        [ -z "${_line%inet}" ] &&
+           _ip=${_line[${#_line[1]}>4?1:2]} &&
+           [ "${_ip#127.0.0.1}" ] && _myip=$_ip
+      done< <(LANG=C /sbin/ifconfig)
+    printf ${1+-v} $1 "%s${_nl:0:$[${#1}>0?0:1]}" $_myip
+}
+
+IP_ADDRESS=$( getMyIP )
+docker swarm init --advertise-addr $IP_ADDRESS
 
 echo "Deploying portainer as a service in the swarm..."
-docker-machine ssh $PROJECT_NAME-swarm-manager "docker service create --name portainer --publish 9000:9000 --constraint 'node.role == manager' --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
+#docker-machine ssh $PROJECT_NAME-swarm-manager "docker service create --name portainer --publish 9000:9000 --constraint 'node.role == manager' --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
+docker service create --name portainer --publish 9000:9000 --constraint 'node.role == manager' --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock
+
 
 echo ""
 echo "Created swarm with manager at $SWARM_MANAGER_IP"
@@ -22,5 +36,6 @@ echo "-- TCP and UDP port 7946 for communication among nodes"
 echo "-- UDP port 4789 for overlay network traffic"
 echo "If you are planning on creating an overlay network with encryption (--opt encrypted), you will also need to ensure ip protocol 50 (ESP) traffic is allowed"
 echo ""
-echo "Portainer service deployed at http://$SWARM_MANAGER_IP:9000"
+#echo "Portainer service deployed at http://$SWARM_MANAGER_IP:9000"
+echo "Portainer service deployed at http://$IP_ADDRESS:9000"
 echo ""

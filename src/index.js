@@ -5,14 +5,17 @@
     });
 
     var express = require('express');
+    let uuid = require('uuid');  
+    let os = require('os');
 
-    var PORT = 3000;
+
+    let port = 3000;
     
     var app = express();
     app.get('/', function (req, res){
-        res.send('Hello world');
+        res.send('Hello from app instance "' + uuid.v4() + '" in container/host "' + os.hostname() + '"');
     });
 
-    app.listen(PORT, "0.0.0.0");
-    console.log('Running on http://localhost:' + PORT);
+    app.listen(port, "0.0.0.0");
+    console.log('Listening on port ' + port);
 })();

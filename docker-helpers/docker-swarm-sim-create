@@ -1,0 +1,184 @@
+#!/bin/bash
+
+set -e
+PROJECT_NAME_FILE="$HOME/.dh-project-name"
+read PROJECT_NAME <"$PROJECT_NAME_FILE"
+
+PROJECT_PATH_FILE="$HOME/.dh-project-path"
+read PROJECT_PATH <"$PROJECT_PATH_FILE"
+
+IMAGE_NAME="$PROJECT_NAME-image"
+CONTAINER_NAME="$PROJECT_NAME-container"
+SERVICE_NAME="$PROJECT_NAME-service"
+NETWORK_NAME="$PROJECT_NAME-network"
+
+PROJECT_GIT_URL=$(cd $PROJECT_PATH; git config --get remote.origin.url)
+PROJECT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+
+# Install Docker
+# https://docs.docker.com/engine/installation/
+
+# Install Docker Machine
+# https://docs.docker.com/machine/install-machine/#installing-machine-directly
+
+# Install Virtualbox
+# sudo apt install virtualbox
+
+echo ""
+echo "#################################################################"
+echo "Removing previous docker machines..."
+echo "#################################################################"
+echo ""
+docker-machine rm --force build-server
+docker-machine rm --force manager1
+docker-machine rm --force manager2
+docker-machine rm --force worker1
+docker-machine rm --force worker2
+
+echo ""
+echo "#################################################################"
+echo "Creating build server..."
+echo "#################################################################"
+echo ""
+# https://docs.docker.com/machine/reference/create/
+docker-machine create -d virtualbox --virtualbox-memory "512" build-server
+
+# List docker virtual machines
+# docker-machine ls
+
+# SSH into build server
+# docker-machine ssh build-server
+
+BUILD_SERVER_IP=$(docker-machine ip build-server)
+
+echo ""
+echo "#################################################################"
+echo "Cloning project into build-server..."
+echo "#################################################################"
+echo ""
+REG_PORT=5000
+docker-machine ssh build-server "mkdir $PROJECT_NAME; cd $PROJECT_NAME; git clone $PROJECT_GIT_URL . && git checkout $PROJECT_GIT_BRANCH"
+PROJECT_VERSION=$(docker-machine ssh build-server "cd $PROJECT_NAME; git rev-parse --short HEAD")
+
+echo ""
+echo "#################################################################"
+echo "Building the docker image..."
+echo "#################################################################"
+echo ""
+LOCAL_IMAGE_NAME="localhost:$REG_PORT/$IMAGE_NAME:$PROJECT_VERSION"
+docker-machine ssh build-server "cd $PROJECT_NAME/src; docker build -t $LOCAL_IMAGE_NAME ."
+
+echo ""
+echo "#################################################################"
+echo "Creating private insecure registry..."
+echo "#################################################################"
+echo ""
+# https://docs.docker.com/registry/deploying/
+docker-machine ssh build-server "docker run -d -p $REG_PORT:$REG_PORT --restart=always --name registry registry:2"
+REG_IP_PORT="$BUILD_SERVER_IP:$REG_PORT"
+
+echo ""
+echo "#################################################################"
+echo "Pushing project image to local docker registry..."
+echo "#################################################################"
+echo ""
+docker-machine ssh build-server "docker push $LOCAL_IMAGE_NAME"
+
+echo ""
+echo "#################################################################"
+echo "Removing local image as it is no longer necessary..."
+echo "#################################################################"
+echo ""
+docker-machine ssh build-server "docker rmi $LOCAL_IMAGE_NAME"
+
+echo ""
+echo "#################################################################"
+echo "Creating the swarm worker machines..."
+echo "#################################################################"
+echo ""
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker1
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker2
+
+echo ""
+echo "#################################################################"
+echo "Creating the swarm manager machines..."
+echo "#################################################################"
+echo ""
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager1
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager2
+
+MANAGER1_IP=$(docker-machine ip manager1)
+
+echo ""
+echo "#################################################################"
+echo "Initiating the docker swarm..." 
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker swarm init --advertise-addr $MANAGER1_IP"
+
+echo ""
+echo "#################################################################"
+echo "Adding workers to the swarm (docker swarm join-token worker)..."
+echo "#################################################################"
+echo ""
+ADD_WORKER_CMD=$(docker-machine ssh manager1 "docker swarm join-token worker")
+docker-machine ssh worker1 "$ADD_WORKER_CMD"
+docker-machine ssh worker2 "$ADD_WORKER_CMD"
+
+echo ""
+echo "#################################################################"
+echo "Adding manager2 to the swarm (docker swarm join-token manager)..."
+echo "#################################################################"
+echo ""
+ADD_MANAGER_CMD=$(docker-machine ssh manager1 "docker swarm join-token manager")
+docker-machine ssh manager2 "$ADD_MANAGER_CMD"
+
+echo ""
+echo "#################################################################"
+echo "Creating an overlay network from within manager1..."
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker network create --driver overlay $NETWORK_NAME"
+
+# echo "Making all swarm nodes, trust the insecure registry in build server..."
+# # https://docs.docker.com/registry/insecure/
+# TRUST_REG_CMD="sudo -i && echo \"{ \"insecure-registries\":[\"$REG_IP_PORT\"] }\" >| /etc/docker/daemon.json && service docker restart"
+# docker-machine ssh manager1 "$TRUST_REG_CMD"
+# docker-machine restart manager1 
+# docker-machine ssh manager2 "$TRUST_REG_CMD"
+# docker-machine restart manager2
+# docker-machine ssh worker1 "$TRUST_REG_CMD"
+# docker-machine restart worker1
+# docker-machine ssh worker2 "$TRUST_REG_CMD"
+# docker-machine restart worker2
+
+echo ""
+echo "#################################################################"
+echo "Creating the service with support for rolling updates..."
+echo "#################################################################"
+echo ""
+# https://docs.docker.com/engine/reference/commandline/service_create/
+REMOTE_IMAGE_NAME="$REG_IP_PORT/$IMAGE_NAME:$PROJECT_VERSION"
+docker-machine ssh manager1 "docker service create --replicas 4 --name $SERVICE_NAME --network $NETWORK_NAME --update-delay 3s --update-parallelism 2 --publish 3000:3000 $REMOTE_IMAGE_NAME"
+
+echo ""
+echo "#################################################################"
+echo "Listing the docker swarm nodes..."
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker node ls"
+
+echo ""
+echo "#################################################################"
+echo "Listing the docker swarm networks..."
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker network ls"
+
+echo ""
+echo "#################################################################"
+echo "Listing the docker swarm services..."
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker service ls"

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+docker-machine rm --force build-server
+docker-machine rm --force manager1
+docker-machine rm --force manager2
+docker-machine rm --force worker1
+docker-machine rm --force worker2

@@ -180,7 +180,7 @@ echo "Creating the service $NGINX_SERVICE_NAME with support for rolling updates.
 echo "#################################################################"
 echo ""
 REMOTE_NGINX_IMAGE_NAME="$REG_IP_PORT/$NGINX_IMAGE_NAME:$PROJECT_VERSION"
-docker-machine ssh manager1 "docker service create --mode=global --constraint node.role=manager --name $NGINX_SERVICE_NAME --network $NETWORK_NAME --update-delay 3s --update-parallelism 2 --publish 8080:8080 $REMOTE_NGINX_IMAGE_NAME"
+docker-machine ssh manager1 "docker service create --mode=global --constraint node.role == manager --name $NGINX_SERVICE_NAME --network $NETWORK_NAME --update-delay 3s --update-parallelism 2 --publish 8080:8080 $REMOTE_NGINX_IMAGE_NAME"
 
 echo ""
 echo "#################################################################"

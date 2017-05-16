@@ -12,6 +12,10 @@ PROJECT_SERVICE_NAME="$PROJECT_NAME-service"
 NGINX_IMAGE_NAME="nginx-image"
 NGINX_SERVICE_NAME="nginx-service"
 
+VISUALIZER_SERVICE_NAME="visualizer-service"
+
+PORTAINER_SERVICE_NAME="portainer-service"
+
 NETWORK_NAME="$PROJECT_NAME-network"
 
 PROJECT_GIT_URL=$(cd $PROJECT_PATH; git config --get remote.origin.url)
@@ -184,6 +188,20 @@ docker-machine ssh manager1 "docker service create --mode=global --constraint no
 
 echo ""
 echo "#################################################################"
+echo "Creating the service $VISUALIZER_SERVICE_NAME..."
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker service create --name $VISUALIZER_SERVICE_NAME --publish 5000:8080/tcp --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer"
+
+echo ""
+echo "#################################################################"
+echo "Creating the service $PORTAINER_SERVICE_NAME..."
+echo "#################################################################"
+echo ""
+docker-machine ssh manager1 "docker service create --name $PORTAINER_SERVICE_NAME --publish 9000:9000 --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
+
+echo ""
+echo "#################################################################"
 echo "Listing the docker swarm nodes..."
 echo "#################################################################"
 echo ""
@@ -216,3 +234,11 @@ echo "Listing the $NGINX_SERVICE_NAME tasks..."
 echo "#################################################################"
 echo ""
 docker-machine ssh manager1 "docker service ps $NGINX_SERVICE_NAME"
+
+echo ""
+echo "#################################################################"
+echo "Listing monitoring service endpoints..."
+echo "#################################################################"
+echo ""
+echo "Docker Swarm Visualizer @ http://$MANAGER1_IP:8080/visualizer"
+echo "Portainer @ http://$MANAGER1_IP:8080/portainer"

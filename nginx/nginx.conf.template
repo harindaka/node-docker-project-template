@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME=$1
+
+MANAGER1_IP=$2
+MANAGER2_IP=$3
+
+PROJECT_SERVICE_PORT=$4
+VISUALIZER_SERVICE_PORT=$5
+PORTAINER_SERVICE_PORT=$6
+
+#nginx configuration file template.
+cat  << EOF
+user  nginx;
+worker_processes  4;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+
+    upstream $PROJECT_NAME {
+        least_conn;
+        server $MANAGER1_IP:$PROJECT_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
+        server $MANAGER2_IP:$PROJECT_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
+    }
+
+    upstream visualizer {
+        least_conn;
+        server $MANAGER1_IP:$VISUALIZER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
+        server $MANAGER2_IP:$VISUALIZER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
+    }
+
+    upstream portainer {
+        least_conn;
+        server $MANAGER1_IP:$PORTAINER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
+        server $MANAGER2_IP:$PORTAINER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
+    }
+        
+    server {
+        listen 8080;
+        
+        #listen 443 ssl;
+        #server_name foobar.net www.foobar.net;
+
+        #ssl on;
+        #ssl_certificate /etc/nginx/ssl/foobar.net-cert.pem;
+        #ssl_certificate_key /etc/nginx/ssl/foobar.net-key.pem;
+
+        location /services/$PROJECT_NAME {
+            proxy_set_header X­Forwarded­For \$proxy_add_x_forwarded_for;
+            proxy_pass http://$PROJECT_NAME;            
+        }
+
+        location /monitoring/visualizer {
+            proxy_set_header X­Forwarded­For \$proxy_add_x_forwarded_for;
+            proxy_pass http://visualizer;            
+        }
+
+        location /monitoring/portainer {
+            proxy_set_header X­Forwarded­For \$proxy_add_x_forwarded_for;
+            proxy_pass http://portainer;            
+        }
+    }    
+}
+EOF

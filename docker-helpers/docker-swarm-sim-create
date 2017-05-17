@@ -9,12 +9,17 @@ read PROJECT_PATH <"$PROJECT_PATH_FILE"
 
 PROJECT_IMAGE_NAME="$PROJECT_NAME-image"
 PROJECT_SERVICE_NAME="$PROJECT_NAME-service"
-NGINX_IMAGE_NAME="nginx-image"
-NGINX_SERVICE_NAME="nginx-service"
+PROJECT_SERVICE_PORT=3000
 
 VISUALIZER_SERVICE_NAME="visualizer-service"
+VISUALIZER_SERVICE_PORT=8000
 
 PORTAINER_SERVICE_NAME="portainer-service"
+PORTAINER_SERVICE_PORT=9000
+
+NGINX_IMAGE_NAME="nginx-image"
+NGINX_CONTAINER_NAME="nginx-container"
+NGINX_CONTAINER_PORT=8080
 
 NETWORK_NAME="$PROJECT_NAME-network"
 
@@ -77,14 +82,6 @@ docker-machine ssh build-server "cd $PROJECT_NAME/src; docker build -t $LOCAL_PR
 
 echo ""
 echo "#################################################################"
-echo "Building the $NGINX_SERVICE_NAME docker image..."
-echo "#################################################################"
-echo ""
-LOCAL_NGINX_IMAGE_NAME="localhost:$REG_PORT/$NGINX_IMAGE_NAME:$PROJECT_VERSION"
-docker-machine ssh build-server "cd $PROJECT_NAME/nginx; docker build -t $LOCAL_NGINX_IMAGE_NAME ."
-
-echo ""
-echo "#################################################################"
 echo "Creating private insecure registry..."
 echo "#################################################################"
 echo ""
@@ -101,13 +98,6 @@ docker-machine ssh build-server "docker push $LOCAL_PROJECT_IMAGE_NAME"
 
 echo ""
 echo "#################################################################"
-echo "Pushing $NGINX_SERVICE_NAME image to local docker registry..."
-echo "#################################################################"
-echo ""
-docker-machine ssh build-server "docker push $LOCAL_NGINX_IMAGE_NAME"
-
-echo ""
-echo "#################################################################"
 echo "Removing local $PROJECT_SERVICE_NAME image as it is no longer necessary..."
 echo "#################################################################"
 echo ""
@@ -115,14 +105,7 @@ docker-machine ssh build-server "docker rmi $LOCAL_PROJECT_IMAGE_NAME"
 
 echo ""
 echo "#################################################################"
-echo "Removing local $NGINX_SERVICE_NAME image as it is no longer necessary..."
-echo "#################################################################"
-echo ""
-docker-machine ssh build-server "docker rmi $LOCAL_NGINX_IMAGE_NAME"
-
-echo ""
-echo "#################################################################"
-echo "Creating the swarm worker machines..."
+echo "Creating the swarm worker virtual machines..."
 echo "#################################################################"
 echo ""
 docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker1
@@ -130,13 +113,14 @@ docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-
 
 echo ""
 echo "#################################################################"
-echo "Creating the swarm manager machines..."
+echo "Creating the swarm manager virtual machines..."
 echo "#################################################################"
 echo ""
 docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager1
 docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager2
 
 MANAGER1_IP=$(docker-machine ip manager1)
+MANAGER2_IP=$(docker-machine ip manager1)
 
 echo ""
 echo "#################################################################"
@@ -176,22 +160,14 @@ echo "#################################################################"
 echo ""
 # https://docs.docker.com/engine/reference/commandline/service_create/
 REMOTE_PROJECT_IMAGE_NAME="$REG_IP_PORT/$PROJECT_IMAGE_NAME:$PROJECT_VERSION"
-docker-machine ssh manager1 "docker service create --replicas 4 --name $PROJECT_SERVICE_NAME --network $NETWORK_NAME --update-delay 3s --update-parallelism 2 --publish 3000:3000 $REMOTE_PROJECT_IMAGE_NAME"
-
-echo ""
-echo "#################################################################"
-echo "Creating the service $NGINX_SERVICE_NAME with support for rolling updates..."
-echo "#################################################################"
-echo ""
-REMOTE_NGINX_IMAGE_NAME="$REG_IP_PORT/$NGINX_IMAGE_NAME:$PROJECT_VERSION"
-docker-machine ssh manager1 "docker service create --mode=global --constraint node.role==manager --name $NGINX_SERVICE_NAME --network $NETWORK_NAME --update-delay 3s --update-parallelism 2 --publish 8080:8080 $REMOTE_NGINX_IMAGE_NAME"
+docker-machine ssh manager1 "docker service create --replicas 4 --name $PROJECT_SERVICE_NAME --network $NETWORK_NAME --update-delay 3s --update-parallelism 2 --publish $PROJECT_SERVICE_PORT:$PROJECT_SERVICE_PORT $REMOTE_PROJECT_IMAGE_NAME"
 
 echo ""
 echo "#################################################################"
 echo "Creating the service $VISUALIZER_SERVICE_NAME..."
 echo "#################################################################"
 echo ""
-docker-machine ssh manager1 "docker service create --name $VISUALIZER_SERVICE_NAME --publish 5000:8080/tcp --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer"
+docker-machine ssh manager1 "docker service create --name $VISUALIZER_SERVICE_NAME --publish $VISUALIZER_SERVICE_PORT:8080/tcp --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer"
 
 echo ""
 echo "#################################################################"
@@ -199,6 +175,44 @@ echo "Creating the service $PORTAINER_SERVICE_NAME..."
 echo "#################################################################"
 echo ""
 docker-machine ssh manager1 "docker service create --name $PORTAINER_SERVICE_NAME --publish 9000:9000 --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
+
+echo ""
+echo "#################################################################"
+echo "Building the $NGINX_IMAGE_NAME docker image..."
+echo "#################################################################"
+echo ""
+LOCAL_NGINX_IMAGE_NAME="localhost:$REG_PORT/$NGINX_IMAGE_NAME:$PROJECT_VERSION"
+docker-machine ssh build-server "cd $PROJECT_NAME/nginx; ./nginx.conf.template node-app $MANAGER1_IP $MANAGER2_IP $PROJECT_SERVICE_PORT $VISUALIZER_SERVICE_PORT $PORTAINER_SERVICE_PORT >| nginx.conf; docker build -t $LOCAL_NGINX_IMAGE_NAME ."
+
+echo ""
+echo "#################################################################"
+echo "Pushing $NGINX_IMAGE_NAME image to local docker registry..."
+echo "#################################################################"
+echo ""
+docker-machine ssh build-server "docker push $LOCAL_NGINX_IMAGE_NAME"
+
+echo ""
+echo "#################################################################"
+echo "Removing local $NGINX_IMAGE_NAME image as it is no longer necessary..."
+echo "#################################################################"
+echo ""
+docker-machine ssh build-server "docker rmi $LOCAL_NGINX_IMAGE_NAME"
+
+echo ""
+echo "#################################################################"
+echo "Creating the reverse proxy virtual machine..."
+echo "#################################################################"
+echo ""
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT reverse-proxy
+REVERSE_PROXY_IP=$(docker-machine ip reverse-proxy)
+
+echo ""
+echo "#################################################################"
+echo "Running the container $NGINX_CONTAINER_NAME as the reverse proxy..."
+echo "#################################################################"
+echo ""
+REMOTE_NGINX_IMAGE_NAME="$REG_IP_PORT/$NGINX_IMAGE_NAME:$PROJECT_VERSION"
+docker-machine ssh reverse-proxy "docker run -d -p $NGINX_CONTAINER_PORT:$NGINX_CONTAINER_PORT --name $NGINX_CONTAINER_NAME $REMOTE_NGINX_IMAGE_NAME"
 
 echo ""
 echo "#################################################################"
@@ -230,16 +244,9 @@ docker-machine ssh manager1 "docker service ps $PROJECT_SERVICE_NAME"
 
 echo ""
 echo "#################################################################"
-echo "Listing the $NGINX_SERVICE_NAME tasks..."
-echo "#################################################################"
-echo ""
-docker-machine ssh manager1 "docker service ps $NGINX_SERVICE_NAME"
-
-echo ""
-echo "#################################################################"
 echo "Listing service endpoints..."
 echo "#################################################################"
 echo ""
-echo "$PROJECT_SERVICE_NAME @ http://$MANAGER1_IP:8080/apps/$PROJECT_NAME"
-echo "$VISUALIZER_SERVICE_NAME @ http://$MANAGER1_IP:8080/monitoring/visualizer"
-echo "$PORTAINER_SERVICE_NAME @ http://$MANAGER1_IP:8080/monitoring/portainer"
+echo "$PROJECT_SERVICE_NAME @ http://$MANAGER1_IP:$NGINX_CONTAINER_PORT/services/$PROJECT_NAME"
+echo "$VISUALIZER_SERVICE_NAME @ http://$MANAGER1_IP:$NGINX_CONTAINER_PORT/monitoring/visualizer"
+echo "$PORTAINER_SERVICE_NAME @ http://$MANAGER1_IP:$NGINX_CONTAINER_PORT/monitoring/portainer"

@@ -46,6 +46,7 @@ docker-machine rm --force manager1
 docker-machine rm --force manager2
 docker-machine rm --force worker1
 docker-machine rm --force worker2
+docker-machine rm --force reverse-proxy
 
 echo ""
 echo "#################################################################"
@@ -167,14 +168,14 @@ echo "#################################################################"
 echo "Creating the service $VISUALIZER_SERVICE_NAME..."
 echo "#################################################################"
 echo ""
-docker-machine ssh manager1 "docker service create --name $VISUALIZER_SERVICE_NAME --publish $VISUALIZER_SERVICE_PORT:8080/tcp --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer"
+docker-machine ssh manager1 "docker service create --name $VISUALIZER_SERVICE_NAME --mode global --constraint node.role==manager --publish $VISUALIZER_SERVICE_PORT:8080/tcp --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock dockersamples/visualizer"
 
 echo ""
 echo "#################################################################"
 echo "Creating the service $PORTAINER_SERVICE_NAME..."
 echo "#################################################################"
 echo ""
-docker-machine ssh manager1 "docker service create --name $PORTAINER_SERVICE_NAME --publish 9000:9000 --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
+docker-machine ssh manager1 "docker service create --name $PORTAINER_SERVICE_NAME --mode global --constraint node.role==manager --publish $PORTAINER_SERVICE_PORT:$PORTAINER_SERVICE_PORT --constraint node.role==manager --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock portainer/portainer -H unix:///var/run/docker.sock"
 
 echo ""
 echo "#################################################################"
@@ -247,6 +248,6 @@ echo "#################################################################"
 echo "Listing service endpoints..."
 echo "#################################################################"
 echo ""
-echo "$PROJECT_SERVICE_NAME @ http://$MANAGER1_IP:$NGINX_CONTAINER_PORT/services/$PROJECT_NAME"
-echo "$VISUALIZER_SERVICE_NAME @ http://$MANAGER1_IP:$NGINX_CONTAINER_PORT/monitoring/visualizer"
-echo "$PORTAINER_SERVICE_NAME @ http://$MANAGER1_IP:$NGINX_CONTAINER_PORT/monitoring/portainer"
+echo "$PROJECT_SERVICE_NAME @ http://$REVERSE_PROXY_IP:$NGINX_CONTAINER_PORT/services/$PROJECT_NAME"
+echo "$VISUALIZER_SERVICE_NAME @ http://$REVERSE_PROXY_IP:$NGINX_CONTAINER_PORT/monitoring/visualizer"
+echo "$PORTAINER_SERVICE_NAME @ http://$REVERSE_PROXY_IP:$NGINX_CONTAINER_PORT/monitoring/portainer"

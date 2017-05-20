@@ -193,7 +193,7 @@ echo "Building the $NGINX_IMAGE_NAME docker image..."
 echo "#################################################################"
 echo ""
 LOCAL_NGINX_IMAGE_NAME="localhost:$REG_PORT/$NGINX_IMAGE_NAME:$PROJECT_VERSION"
-docker-machine ssh build-server "cd $PROJECT_NAME/nginx; ./nginx.conf.template node-app $MANAGER1_IP $MANAGER2_IP $PROJECT_SERVICE_PORT $VISUALIZER_SERVICE_PORT $PORTAINER_SERVICE_PORT >| nginx.conf; docker build -t $LOCAL_NGINX_IMAGE_NAME ."
+docker-machine ssh build-server "cd $PROJECT_NAME/nginx; sh nginx.conf.template node-app $MANAGER1_IP $MANAGER2_IP $PROJECT_SERVICE_PORT $VISUALIZER_SERVICE_PORT $PORTAINER_SERVICE_PORT >| nginx.conf; docker build -t $LOCAL_NGINX_IMAGE_NAME ."
 
 echo ""
 echo "#################################################################"

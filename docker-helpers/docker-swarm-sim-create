@@ -41,12 +41,13 @@ echo "#################################################################"
 echo "Removing previous docker machines..."
 echo "#################################################################"
 echo ""
-docker-machine rm --force build-server
-docker-machine rm --force manager1
-docker-machine rm --force manager2
-docker-machine rm --force worker1
-docker-machine rm --force worker2
-docker-machine rm --force reverse-proxy
+docker-machine rm --force build-server &
+docker-machine rm --force manager1 &
+docker-machine rm --force manager2 &
+docker-machine rm --force worker1 &
+docker-machine rm --force worker2 &
+docker-machine rm --force reverse-proxy &
+wait
 
 echo ""
 echo "#################################################################"
@@ -109,19 +110,28 @@ echo "#################################################################"
 echo "Creating the swarm worker virtual machines..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker1
-docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker2
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker1 &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker2 &
 
 echo ""
 echo "#################################################################"
 echo "Creating the swarm manager virtual machines..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager1
-docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager2
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager1 &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager2 &
 
+echo ""
+echo "#################################################################"
+echo "Creating the reverse proxy virtual machine..."
+echo "#################################################################"
+echo ""
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT reverse-proxy &
+
+wait
 MANAGER1_IP=$(docker-machine ip manager1)
 MANAGER2_IP=$(docker-machine ip manager1)
+REVERSE_PROXY_IP=$(docker-machine ip reverse-proxy)
 
 echo ""
 echo "#################################################################"
@@ -198,14 +208,6 @@ echo "Removing local $NGINX_IMAGE_NAME image as it is no longer necessary..."
 echo "#################################################################"
 echo ""
 docker-machine ssh build-server "docker rmi $LOCAL_NGINX_IMAGE_NAME"
-
-echo ""
-echo "#################################################################"
-echo "Creating the reverse proxy virtual machine..."
-echo "#################################################################"
-echo ""
-docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT reverse-proxy
-REVERSE_PROXY_IP=$(docker-machine ip reverse-proxy)
 
 echo ""
 echo "#################################################################"

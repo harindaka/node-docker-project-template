@@ -13,7 +13,7 @@ PORTAINER_SERVICE_PORT=$6
 
 #nginx configuration file template.
 cat  << EOF
-user www-data;
+user nginx;
 worker_processes auto;
 pid /run/nginx.pid;
 

@@ -13,35 +13,16 @@ PORTAINER_SERVICE_PORT=$6
 
 #nginx configuration file template.
 cat  << EOF
-user  nginx;
-worker_processes  4;
-
-error_log  /var/log/nginx/error.log warn;
-pid        /var/run/nginx.pid;
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
 
 events {
     worker_connections  1024;
 }
 
 http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
-
-    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-                      '\$status \$body_bytes_sent "\$http_referer" '
-                      '"\$http_user_agent" "\$http_x_forwarded_for"';
-
-    access_log  /var/log/nginx/access.log  main;
-
-    sendfile        on;
-    #tcp_nopush     on;
-
-    keepalive_timeout  65;
-
-    gzip  on;
-
-    include /etc/nginx/conf.d/*.conf;
-
+	
     upstream $PROJECT_NAME {
         least_conn;
         server $MANAGER1_IP:$PROJECT_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
@@ -59,31 +40,68 @@ http {
         server $MANAGER1_IP:$PORTAINER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
         server $MANAGER2_IP:$PORTAINER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
     }
-        
+
     server {
-        listen 8080;
+
+        listen       8181;
+        server_name  hostname;
         
-        #listen 443 ssl;
-        #server_name foobar.net www.foobar.net;
+        proxy_redirect                          off;
+        proxy_set_header Host                   \$host;
+        proxy_set_header X-Real-IP              \$remote_addr;
+        proxy_set_header X-Forwarded-Host       \$host;
+        proxy_set_header X-Forwarded-Server     \$host;
+        proxy_set_header X-Forwarded-For        \$proxy_add_x_forwarded_for;
 
-        #ssl on;
-        #ssl_certificate /etc/nginx/ssl/foobar.net-cert.pem;
-        #ssl_certificate_key /etc/nginx/ssl/foobar.net-key.pem;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "Upgrade";
 
-        location /services/$PROJECT_NAME {
-            #proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_pass http://$PROJECT_NAME;            
-        }
+        location / {          
+            proxy_pass http://$PROJECT_NAME;
+        }  
+    }
 
-        location /monitoring/visualizer {
-            #proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_pass http://visualizer;            
-        }
+    server {
 
-        location /monitoring/portainer {
-            #proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_pass http://portainer;            
-        }
-    }    
+        listen       8282;
+        server_name  hostname;
+        
+        proxy_redirect                          off;
+        proxy_set_header Host                   \$host;
+        proxy_set_header X-Real-IP              \$remote_addr;
+        proxy_set_header X-Forwarded-Host       \$host;
+        proxy_set_header X-Forwarded-Server     \$host;
+        proxy_set_header X-Forwarded-For        \$proxy_add_x_forwarded_for;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "Upgrade";
+
+        location / {
+            proxy_pass http://visualizer;
+        } 
+    }
+
+    server {
+
+        listen       8383;
+        server_name  hostname;
+        
+        proxy_redirect                          off;
+        proxy_set_header Host                   \$host;
+        proxy_set_header X-Real-IP              \$remote_addr;
+        proxy_set_header X-Forwarded-Host       \$host;
+        proxy_set_header X-Forwarded-Server     \$host;
+        proxy_set_header X-Forwarded-For        \$proxy_add_x_forwarded_for;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "Upgrade";
+
+        location / {
+            proxy_pass http://portainer;
+        } 
+    }
 }
 EOF

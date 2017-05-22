@@ -18,33 +18,33 @@ worker_processes auto;
 pid /run/nginx.pid;
 
 events {
-    worker_connections  1024;
+    worker_connections  512;
 }
 
 http {
 	
     upstream $PROJECT_NAME {
         least_conn;
-        server $MANAGER1_IP:$PROJECT_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
-        server $MANAGER2_IP:$PROJECT_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
+        server $MANAGER1_IP:$PROJECT_SERVICE_PORT;
+        server $MANAGER2_IP:$PROJECT_SERVICE_PORT;        
     }
 
     upstream visualizer {
         least_conn;
-        server $MANAGER1_IP:$VISUALIZER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
-        server $MANAGER2_IP:$VISUALIZER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
+        server $MANAGER1_IP:$VISUALIZER_SERVICE_PORT;
+        server $MANAGER2_IP:$VISUALIZER_SERVICE_PORT;        
     }
 
     upstream portainer {
         least_conn;
-        server $MANAGER1_IP:$PORTAINER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;
-        server $MANAGER2_IP:$PORTAINER_SERVICE_PORT weight=10 max_fails=3 fail_timeout=30s;        
+        server $MANAGER1_IP:$PORTAINER_SERVICE_PORT;
+        server $MANAGER2_IP:$PORTAINER_SERVICE_PORT;        
     }
 
     server {
 
-        listen       8181;
-        server_name  hostname;
+        listen       8080;
+        server_name  $PROJECT_NAME.localhost;
         
         proxy_redirect                          off;
         proxy_set_header Host                   \$host;
@@ -64,8 +64,8 @@ http {
 
     server {
 
-        listen       8282;
-        server_name  hostname;
+        listen       8080;
+        server_name  visualizer.localhost;
         
         proxy_redirect                          off;
         proxy_set_header Host                   \$host;
@@ -85,8 +85,8 @@ http {
 
     server {
 
-        listen       8383;
-        server_name  hostname;
+        listen       8080;
+        server_name  portainer.localhost;
         
         proxy_redirect                          off;
         proxy_set_header Host                   \$host;
@@ -100,8 +100,13 @@ http {
         proxy_set_header Connection "Upgrade";
 
         location / {
+            proxy_set_header Connection "";
             proxy_pass http://portainer;
-        } 
+        }
+
+        location /api/websocket/ {            
+            proxy_pass http://portainer/api/websocket/;
+        }
     }
 }
 EOF

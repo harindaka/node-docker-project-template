@@ -55,7 +55,7 @@ echo "Creating build server..."
 echo "#################################################################"
 echo ""
 # https://docs.docker.com/machine/reference/create/
-docker-machine create -d virtualbox --virtualbox-memory "256" build-server
+docker-machine create -d virtualbox --virtualbox-memory "512" build-server
 
 # List docker virtual machines
 # docker-machine ls
@@ -110,23 +110,23 @@ echo "#################################################################"
 echo "Creating the swarm worker virtual machines..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT worker1 &
-docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT worker2 &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker1 &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT worker2 &
 
 echo ""
 echo "#################################################################"
 echo "Creating the swarm manager virtual machines..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT manager1 &
-docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT manager2 &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager1 &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT manager2 &
 
 echo ""
 echo "#################################################################"
 echo "Creating the reverse proxy virtual machine..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "256" --engine-insecure-registry $REG_IP_PORT reverse-proxy &
+docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-registry $REG_IP_PORT reverse-proxy &
 
 wait
 MANAGER1_IP=$(docker-machine ip manager1)

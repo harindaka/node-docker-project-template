@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+
+PROJECT_NAME=$1
+MANAGER1_IP=$2
+MANAGER2_IP=$3
+PROXY_PORT=$4
+PROJECT_PORT=$5
+VISUALIZER_PORT=$6
+PORTAINER_PORT=$7
+
+sed -e "s/%PROJECT_NAME%/$PROJECT_NAME/g" \
+    -e "s/%MANAGER1_IP%/$MANAGER1_IP/g" \
+    -e "s/%MANAGER2_IP%/$MANAGER2_IP/g" \
+    -e "s/%PROXY_PORT%/$PROXY_PORT/g" \
+    -e "s/%PROJECT_PORT%/$PROJECT_PORT/g" \
+    -e "s/%VISUALIZER_PORT%/$VISUALIZER_PORT/g" \
+    -e "s/%PORTAINER_PORT%/$PORTAINER_PORT/g" \
+    nginx.conf.template > nginx.conf

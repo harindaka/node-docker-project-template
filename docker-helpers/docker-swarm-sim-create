@@ -130,7 +130,7 @@ docker-machine create -d virtualbox --virtualbox-memory "512" --engine-insecure-
 
 wait
 MANAGER1_IP=$(docker-machine ip manager1)
-MANAGER2_IP=$(docker-machine ip manager1)
+MANAGER2_IP=$(docker-machine ip manager2)
 REVERSE_PROXY_IP=$(docker-machine ip reverse-proxy)
 
 echo ""

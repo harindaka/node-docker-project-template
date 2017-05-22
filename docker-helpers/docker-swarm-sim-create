@@ -110,16 +110,16 @@ echo "#################################################################"
 echo "Creating the swarm worker virtual machines..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "256" --engine-insecure-registry $REG_IP_PORT worker1 &
-docker-machine create -d virtualbox --virtualbox-memory "256" --engine-insecure-registry $REG_IP_PORT worker2 &
+docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT worker1 &
+docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT worker2 &
 
 echo ""
 echo "#################################################################"
 echo "Creating the swarm manager virtual machines..."
 echo "#################################################################"
 echo ""
-docker-machine create -d virtualbox --virtualbox-memory "256" --engine-insecure-registry $REG_IP_PORT manager1 &
-docker-machine create -d virtualbox --virtualbox-memory "256" --engine-insecure-registry $REG_IP_PORT manager2 &
+docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT manager1 &
+docker-machine create -d virtualbox --virtualbox-memory "128" --engine-insecure-registry $REG_IP_PORT manager2 &
 
 echo ""
 echo "#################################################################"
